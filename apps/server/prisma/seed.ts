@@ -18,6 +18,7 @@ async function main() {
       email: "alex@example.com",
       relationship: "Power of Attorney",
       role: "ADMIN",
+      canDelete: true, // Only this admin can delete expenses
       passwordHash
     }
   });
