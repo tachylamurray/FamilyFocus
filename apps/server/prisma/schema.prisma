@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  VIEW_ONLY
+}
+
+model User {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  passwordHash String
+  relationship String
+  role        Role         @default(MEMBER)
+  expenses    Expense[]    @relation("UserExpenses")
+  incomes     Income[]
+  notificationsSent Notification[] @relation("NotificationSender")
+  notificationRecipients NotificationRecipient[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  amount      Decimal  @db.Decimal(10, 2)
+  dueDate     DateTime
+  notes       String?
+  createdById String?
+  createdBy   User?    @relation("UserExpenses", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  source      String
+  amount      Decimal  @db.Decimal(10, 2)
+  receivedDate DateTime
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String      @id @default(cuid())
+  message   String
+  senderId  String
+  sender    User        @relation("NotificationSender", fields: [senderId], references: [id])
+  recipients NotificationRecipient[]
+  createdAt DateTime    @default(now())
+}
+
+model NotificationRecipient {
+  id             String        @id @default(cuid())
+  notificationId String
+  notification   Notification  @relation(fields: [notificationId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+}
+

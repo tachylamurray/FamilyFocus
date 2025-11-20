@@ -1,0 +1,24 @@
+{
+  "name": "family-finance-platform",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "npm run install:web && npm run install:server",
+    "install:web": "npm --prefix apps/web install",
+    "install:server": "npm --prefix apps/server install",
+    "dev": "concurrently \"npm run dev --prefix apps/web\" \"npm run dev --prefix apps/server\"",
+    "dev:web": "npm run dev --prefix apps/web",
+    "dev:server": "npm run dev --prefix apps/server",
+    "lint": "npm run lint --prefix apps/web && npm run lint --prefix apps/server",
+    "db:migrate": "npm run db:migrate --prefix apps/server",
+    "db:seed": "npm run db:seed --prefix apps/server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1"
+  },
+  "workspaces": [
+    "apps/web",
+    "apps/server"
+  ]
+}
+

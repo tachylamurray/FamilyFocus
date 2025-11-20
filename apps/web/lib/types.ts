@@ -1,0 +1,48 @@
+export type Role = "ADMIN" | "MEMBER" | "VIEW_ONLY";
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  relationship: string;
+  role: Role;
+};
+
+export type ExpenseCategory =
+  | "Mortgage"
+  | "Property Taxes"
+  | "Electricity"
+  | "Water"
+  | "Gas"
+  | "Groceries"
+  | "Insurance"
+  | "Therapy Expenses";
+
+export type Expense = {
+  id: string;
+  category: ExpenseCategory;
+  amount: number;
+  dueDate: string;
+  notes?: string | null;
+  createdBy: User;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Notification = {
+  id: string;
+  message: string;
+  sender: User;
+  recipientIds: string[] | null;
+  createdAt: string;
+};
+
+export type DashboardOverview = {
+  month: string;
+  monthlyIncome: number;
+  totalSpending: number;
+  netSavings: number;
+  spendingByCategory: Record<ExpenseCategory, number>;
+  upcomingBills: Expense[];
+};
+
