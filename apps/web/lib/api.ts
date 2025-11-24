@@ -71,22 +71,48 @@ export const api = {
     return handleResponse<{ expenses: Expense[] }>(res);
   },
 
-  async createExpense(payload: Partial<Expense>) {
+  async createExpense(payload: Partial<Expense> & { image?: File }) {
+    const formData = new FormData();
+    formData.append("category", payload.category || "");
+    formData.append("amount", String(payload.amount || 0));
+    formData.append("dueDate", payload.dueDate || "");
+    if (payload.notes) {
+      formData.append("notes", payload.notes);
+    }
+    if (payload.image) {
+      formData.append("image", payload.image);
+    }
+
     const res = await fetch(`${API_BASE_URL}/expenses`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(payload)
+      body: formData
     });
     return handleResponse<{ expense: Expense }>(res);
   },
 
-  async updateExpense(id: string, payload: Partial<Expense>) {
+  async updateExpense(id: string, payload: Partial<Expense> & { image?: File }) {
+    const formData = new FormData();
+    if (payload.category) {
+      formData.append("category", payload.category);
+    }
+    if (payload.amount !== undefined) {
+      formData.append("amount", String(payload.amount));
+    }
+    if (payload.dueDate) {
+      formData.append("dueDate", payload.dueDate);
+    }
+    if (payload.notes !== undefined) {
+      formData.append("notes", payload.notes || "");
+    }
+    if (payload.image) {
+      formData.append("image", payload.image);
+    }
+
     const res = await fetch(`${API_BASE_URL}/expenses/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(payload)
+      body: formData
     });
     return handleResponse<{ expense: Expense }>(res);
   },
@@ -121,6 +147,34 @@ export const api = {
       credentials: "include"
     });
     return handleResponse<{ members: User[] }>(res);
+  },
+
+  async updateProfile(payload: { name: string }) {
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+    return handleResponse<{ user: User }>(res);
+  },
+
+  async updateMemberRole(memberId: string, role: "ADMIN" | "MEMBER" | "VIEW_ONLY") {
+    const res = await fetch(`${API_BASE_URL}/members/${memberId}/role`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ role })
+    });
+    return handleResponse<{ member: User }>(res);
+  },
+
+  async deleteMember(memberId: string) {
+    const res = await fetch(`${API_BASE_URL}/members/${memberId}`, {
+      method: "DELETE",
+      credentials: "include"
+    });
+    return handleResponse<{ success: boolean }>(res);
   }
 };
 
