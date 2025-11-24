@@ -48,7 +48,8 @@ router.get("/", requireAuth, async (_req, res) => {
         dueDate: {
           gte: start,
           lte: end
-        }
+        },
+        deletedAt: null // Exclude deleted expenses
       }
     })
   ]);
@@ -77,7 +78,8 @@ router.get("/", requireAuth, async (_req, res) => {
       dueDate: {
         gte: now,
         lte: addDays(now, 30)
-      }
+      },
+      deletedAt: null // Exclude deleted expenses
     },
     orderBy: { dueDate: "asc" },
     include: {

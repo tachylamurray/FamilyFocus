@@ -6,6 +6,7 @@ export type User = {
   email: string;
   relationship: string;
   role: Role;
+  canDelete: boolean;
 };
 
 export type ExpenseCategory =
