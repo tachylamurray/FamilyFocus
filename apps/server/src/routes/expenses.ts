@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
+import { upload } from "../middleware/upload";
 
 const router = Router();
 
@@ -10,6 +11,18 @@ const expenseSchema = z.object({
   amount: z.number(),
   dueDate: z.string(),
   notes: z.string().optional()
+});
+
+// Schema for form data (multipart/form-data sends everything as strings)
+const expenseFormSchema = z.object({
+  category: z.string(),
+  amount: z.string().transform((val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) throw new Error("Amount must be a valid number");
+    return num;
+  }),
+  dueDate: z.string(),
+  notes: z.string().optional().transform((val) => val || undefined)
 });
 
 function mapExpense(expense: any) {
@@ -41,20 +54,26 @@ router.get("/", requireAuth, async (req, res) => {
   return res.json({ expenses: expenses.map(mapExpense) });
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, upload.single("image"), async (req, res) => {
   if (req.user?.role === "VIEW_ONLY") {
     return res.status(403).json({ message: "View-only members cannot add expenses" });
   }
 
-  const parsed = expenseSchema.safeParse(req.body);
+  // Parse form data (amount comes as string from multipart/form-data)
+  const parsed = expenseFormSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ message: "Invalid expense data" });
+    console.error("Validation error:", parsed.error.errors);
+    return res.status(400).json({ message: "Invalid expense data", errors: parsed.error.errors });
   }
+
+  // Handle image upload
+  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
   const expense = await prisma.expense.create({
     data: {
       ...parsed.data,
       dueDate: new Date(parsed.data.dueDate),
+      imageUrl,
       createdBy: {
         connect: { id: req.user!.id }
       }
@@ -70,14 +89,14 @@ router.post("/", requireAuth, async (req, res) => {
       expenseId: expense.id,
       action: "CREATE",
       changedBy: req.user!.id,
-      newValues: parsed.data
+      newValues: { ...parsed.data, imageUrl }
     }
   });
 
   return res.status(201).json({ expense: mapExpense(expense) });
 });
 
-router.put("/:id", requireAuth, async (req, res) => {
+router.put("/:id", requireAuth, upload.single("image"), async (req, res) => {
   const { id } = req.params;
   const existing = await prisma.expense.findUnique({
     where: { id },
@@ -97,9 +116,24 @@ router.put("/:id", requireAuth, async (req, res) => {
     return res.status(403).json({ message: "Not allowed to edit this expense" });
   }
 
-  const parsed = expenseSchema.partial().safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ message: "Invalid expense data" });
+  // Parse form data (fields come as strings from multipart/form-data)
+  // Only validate fields that are present
+  const updateData: any = {};
+  if (req.body.category !== undefined) updateData.category = req.body.category;
+  if (req.body.amount !== undefined) {
+    const amount = parseFloat(req.body.amount);
+    if (isNaN(amount)) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+    updateData.amount = amount;
+  }
+  if (req.body.dueDate !== undefined) updateData.dueDate = new Date(req.body.dueDate);
+  if (req.body.notes !== undefined) updateData.notes = req.body.notes || null;
+
+  // Handle image upload - if new image is uploaded, use it, otherwise keep existing
+  const imageUrl = req.file ? `/uploads/${req.file.filename}` : existing.imageUrl;
+  if (imageUrl) {
+    updateData.imageUrl = imageUrl;
   }
 
   // Store old values for audit log
@@ -107,15 +141,13 @@ router.put("/:id", requireAuth, async (req, res) => {
     category: existing.category,
     amount: Number(existing.amount),
     dueDate: existing.dueDate.toISOString(),
-    notes: existing.notes
+    notes: existing.notes,
+    imageUrl: existing.imageUrl
   };
 
   const expense = await prisma.expense.update({
     where: { id },
-    data: {
-      ...parsed.data,
-      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : undefined
-    },
+    data: updateData,
     include: {
       createdBy: true
     }
@@ -128,7 +160,7 @@ router.put("/:id", requireAuth, async (req, res) => {
       action: "UPDATE",
       changedBy: user.id,
       oldValues,
-      newValues: parsed.data
+      newValues: updateData
     }
   });
 
@@ -151,8 +183,8 @@ router.delete("/:id", requireAuth, async (req, res) => {
   }
   const user = req.user!;
   
-  // Only users with canDelete permission can delete expenses
-  if (!user.canDelete) {
+  // Admins can always delete expenses, or users with canDelete permission
+  if (user.role !== "ADMIN" && !user.canDelete) {
     return res.status(403).json({ message: "You do not have permission to delete expenses" });
   }
 
