@@ -35,6 +35,7 @@ model Expense {
   amount      Decimal  @db.Decimal(10, 2)
   dueDate     DateTime
   notes       String?
+  imageUrl    String?
   deletedAt   DateTime?
   createdById String?
   createdBy   User?    @relation("UserExpenses", fields: [createdById], references: [id])

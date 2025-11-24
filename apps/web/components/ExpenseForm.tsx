@@ -4,7 +4,7 @@ import { Expense, ExpenseCategory } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const schema = z.object({
   category: z.string(),
@@ -17,11 +17,13 @@ type FormValues = z.infer<typeof schema>;
 
 type Props = {
   initialValues?: Expense;
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: FormValues & { image?: File }) => Promise<void>;
   onDelete?: () => Promise<void>;
   submitting: boolean;
   canEdit: boolean;
 };
+
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api").replace(/\/api$/, "");
 
 const categories: ExpenseCategory[] = [
   "Mortgage",
@@ -51,6 +53,10 @@ export default function ExpenseForm({
     }
   });
 
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Reset form when initialValues changes (when user selects/deselects an expense)
   useEffect(() => {
     if (initialValues) {
@@ -60,6 +66,8 @@ export default function ExpenseForm({
         dueDate: initialValues.dueDate.split("T")[0],
         notes: initialValues.notes ?? ""
       });
+      setSelectedImage(null);
+      setImagePreview(initialValues.imageUrl ? `${API_BASE_URL}${initialValues.imageUrl}` : null);
     } else {
       form.reset({
         category: categories[0],
@@ -67,14 +75,36 @@ export default function ExpenseForm({
         dueDate: new Date().toISOString().split("T")[0],
         notes: ""
       });
+      setSelectedImage(null);
+      setImagePreview(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialValues?.id]);
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = form.handleSubmit(async (values) => {
-    await onSubmit(values);
+    await onSubmit({
+      ...values,
+      image: selectedImage || undefined
+    });
     if (!initialValues) {
       form.reset();
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   });
 
@@ -129,6 +159,31 @@ export default function ExpenseForm({
             disabled={!canEdit}
           />
         </div>
+      </div>
+      <div>
+        <label className="text-sm text-textSecondary">Expense Screenshot (Optional)</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          disabled={!canEdit}
+          className="mt-2 w-full rounded-xl border-2 border-emerald-600/50 bg-surfaceAlt/70 px-4 py-3 text-textPrimary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50 disabled:cursor-not-allowed file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-slate-900 hover:file:opacity-90"
+        />
+        {(imagePreview || selectedImage) && (
+          <div className="mt-3">
+            <img
+              src={imagePreview || undefined}
+              alt="Expense preview"
+              className="max-h-48 w-full rounded-xl object-contain border border-surfaceAlt"
+            />
+            {selectedImage && (
+              <p className="mt-1 text-xs text-textSecondary">
+                New image selected: {selectedImage.name}
+              </p>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs text-textSecondary">

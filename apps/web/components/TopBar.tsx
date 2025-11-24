@@ -14,7 +14,8 @@ const titles: Record<string, string> = {
   "/": "Family Finance Dashboard",
   "/expenses": "Manage Expenses",
   "/notifications": "Family Notifications",
-  "/members": "Family Members"
+  "/members": "Family Members",
+  "/profile": "Profile Settings"
 };
 
 export default function TopBar({ user, pathname, onMenuToggle }: Props) {
