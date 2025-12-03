@@ -6,6 +6,7 @@ export type User = {
   email: string;
   relationship: string;
   role: Role;
+  canDelete: boolean;
 };
 
 export type ExpenseCategory =
@@ -24,6 +25,7 @@ export type Expense = {
   amount: number;
   dueDate: string;
   notes?: string | null;
+  imageUrl?: string | null;
   createdBy: User;
   createdAt: string;
   updatedAt: string;

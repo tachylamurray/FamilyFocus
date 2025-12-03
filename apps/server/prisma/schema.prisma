@@ -20,6 +20,7 @@ model User {
   passwordHash String
   relationship String
   role        Role         @default(MEMBER)
+  canDelete   Boolean      @default(false)
   expenses    Expense[]    @relation("UserExpenses")
   incomes     Income[]
   notificationsSent Notification[] @relation("NotificationSender")
@@ -34,8 +35,11 @@ model Expense {
   amount      Decimal  @db.Decimal(10, 2)
   dueDate     DateTime
   notes       String?
+  imageUrl    String?
+  deletedAt   DateTime?
   createdById String?
   createdBy   User?    @relation("UserExpenses", fields: [createdById], references: [id])
+  auditLogs   ExpenseAuditLog[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -66,5 +70,19 @@ model NotificationRecipient {
   notification   Notification  @relation(fields: [notificationId], references: [id])
   userId         String
   user           User          @relation(fields: [userId], references: [id])
+}
+
+model ExpenseAuditLog {
+  id          String   @id @default(cuid())
+  expenseId   String
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  action      String
+  changedBy   String
+  oldValues   Json?
+  newValues   Json?
+  createdAt   DateTime @default(now())
+
+  @@index([expenseId])
+  @@index([createdAt])
 }
 

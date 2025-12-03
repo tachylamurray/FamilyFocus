@@ -13,7 +13,8 @@ const links = [
   { href: "/", label: "Dashboard", icon: "📊" },
   { href: "/expenses", label: "Expenses", icon: "💸" },
   { href: "/notifications", label: "Notifications", icon: "🔔" },
-  { href: "/members", label: "Members", icon: "👥" }
+  { href: "/members", label: "Members", icon: "👥" },
+  { href: "/profile", label: "Profile", icon: "👤" }
 ];
 
 export default function Sidebar({ user, mobileOpen, onClose }: Props) {

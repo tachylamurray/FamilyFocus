@@ -10,6 +10,7 @@ type AuthContextProps = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -72,12 +73,22 @@ export default function AuthProvider({ children }: Props) {
     router.push("/login");
   };
 
+  const refreshUser = async () => {
+    try {
+      const data = await api.me();
+      setUser(data.user);
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+    }
+  };
+
   const value = useMemo(
     () => ({
       user,
       loading,
       login,
-      logout
+      logout,
+      refreshUser
     }),
     [user, loading]
   );

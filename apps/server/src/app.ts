@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import path from "path";
 import authRoutes from "./routes/auth";
 import expenseRoutes from "./routes/expenses";
 import notificationRoutes from "./routes/notifications";
@@ -22,6 +23,9 @@ app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve uploaded images statically
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

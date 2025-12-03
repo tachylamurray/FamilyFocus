@@ -8,6 +8,7 @@ declare global {
       user?: {
         id: string;
         role: string;
+        canDelete: boolean;
       };
     }
   }
@@ -30,7 +31,7 @@ export async function requireAuth(
     if (!user) {
       return res.status(401).json({ message: "Unauthenticated" });
     }
-    req.user = { id: user.id, role: user.role };
+    req.user = { id: user.id, role: user.role, canDelete: user.canDelete };
     next();
   } catch (error) {
     console.error(error);

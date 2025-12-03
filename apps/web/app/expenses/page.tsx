@@ -123,10 +123,10 @@ export default function ExpensesPage() {
                     if (selectedExpense) {
                       await updateExpense.mutateAsync({
                         id: selectedExpense.id,
-                        values
+                        values: values as Partial<Expense> & { image?: File }
                       });
                     } else {
-                      await createExpense.mutateAsync(values);
+                      await createExpense.mutateAsync(values as Partial<Expense> & { image?: File });
                     }
                   }}
                   onDelete={
