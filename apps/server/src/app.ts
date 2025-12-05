@@ -27,6 +27,22 @@ app.use(cookieParser());
 // Serve uploaded images statically
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+app.get("/", (_req, res) => {
+  res.json({
+    message: "Family Finance API",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      auth: "/api/auth",
+      expenses: "/api/expenses",
+      notifications: "/api/notifications",
+      members: "/api/members",
+      dashboard: "/api/dashboard",
+      incomes: "/api/incomes"
+    }
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
