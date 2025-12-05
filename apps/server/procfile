@@ -1,0 +1,8 @@
+web: npm run db:generate && (npm run db:deploy || true) && npm run start
+
+
+
+
+
+
+
