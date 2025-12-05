@@ -70,11 +70,13 @@ router.post("/login", async (req, res) => {
   }
 
   const token = signToken({ userId: user.id });
+  const isProduction = process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT === "production";
   res.cookie("family_finance_token", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    sameSite: isProduction ? "none" : "lax",
+    secure: isProduction,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    domain: isProduction ? undefined : undefined // Let browser handle domain for cross-origin
   });
 
   return res.json({
@@ -90,7 +92,12 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/logout", (_req, res) => {
-  res.clearCookie("family_finance_token");
+  const isProduction = process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT === "production";
+  res.clearCookie("family_finance_token", {
+    httpOnly: true,
+    sameSite: isProduction ? "none" : "lax",
+    secure: isProduction
+  });
   return res.json({ success: true });
 });
 
