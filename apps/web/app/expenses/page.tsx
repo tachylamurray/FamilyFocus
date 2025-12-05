@@ -131,8 +131,9 @@ export default function ExpensesPage() {
                   }}
                   onDelete={
                     selectedExpense && canEdit
-                      ? async () =>
-                          await deleteExpense.mutateAsync(selectedExpense.id)
+                      ? async () => {
+                          await deleteExpense.mutateAsync(selectedExpense.id);
+                        }
                       : undefined
                   }
                 />
