@@ -27,14 +27,22 @@ router.post("/register", async (req, res) => {
     return res.status(409).json({ message: "Email already registered" });
   }
 
+  // Check if this is the first user - make them admin automatically
+  const userCount = await prisma.user.count();
+  const isFirstUser = userCount === 0;
+  
+  // Determine role: use provided role, or ADMIN if first user, or MEMBER
+  const finalRole = role ?? (isFirstUser ? "ADMIN" : "MEMBER");
+
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: {
       name,
       email,
       relationship,
-      role: role ?? "MEMBER",
-      passwordHash
+      role: finalRole,
+      passwordHash,
+      canDelete: finalRole === "ADMIN" // Admins can delete by default
     },
     select: {
       id: true,
@@ -75,8 +83,9 @@ router.post("/login", async (req, res) => {
     httpOnly: true,
     sameSite: isProduction ? "none" : "lax",
     secure: isProduction,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    domain: isProduction ? undefined : undefined // Let browser handle domain for cross-origin
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: "/" // Ensure cookie is available for all routes
+    // Don't set domain - let browser handle it for cross-origin
   });
 
   return res.json({
@@ -96,7 +105,8 @@ router.post("/logout", (_req, res) => {
   res.clearCookie("family_finance_token", {
     httpOnly: true,
     sameSite: isProduction ? "none" : "lax",
-    secure: isProduction
+    secure: isProduction,
+    path: "/"
   });
   return res.json({ success: true });
 });
