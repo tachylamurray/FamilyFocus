@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const schema = z.object({
   email: z.string().email(),
@@ -18,6 +18,7 @@ type FormValues = z.infer<typeof schema>;
 export default function LoginPage() {
   const { login, loading, user } = useAuth();
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
     handleSubmit,
@@ -33,7 +34,12 @@ export default function LoginPage() {
   }, [user, loading, router]);
 
   const onSubmit = async (values: FormValues) => {
-    await login(values.email, values.password);
+    setIsSubmitting(true);
+    try {
+      await login(values.email, values.password);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -74,10 +80,10 @@ export default function LoginPage() {
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting || loading}
             className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {isSubmitting ? "Signing In..." : "Sign In"}
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-textSecondary">
