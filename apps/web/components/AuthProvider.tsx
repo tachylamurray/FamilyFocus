@@ -31,6 +31,9 @@ export default function AuthProvider({ children }: Props) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  
+  // Ensure we're in the browser
+  const isBrowser = typeof window !== "undefined";
 
   useEffect(() => {
     let mounted = true;
@@ -41,9 +44,14 @@ export default function AuthProvider({ children }: Props) {
           setUser(data.user);
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        // Silently fail - user is not authenticated
         if (mounted) {
           setUser(null);
+        }
+        // Only log in development
+        if (process.env.NODE_ENV === "development") {
+          console.error("Auth check failed:", error);
         }
       })
       .finally(() => {
@@ -61,7 +69,18 @@ export default function AuthProvider({ children }: Props) {
     try {
       const { user: loggedIn } = await api.login({ email, password });
       setUser(loggedIn);
-      router.push("/");
+      // Use replace instead of push to avoid navigation issues
+      if (isBrowser) {
+        try {
+          router.replace("/");
+        } catch (navError) {
+          // Fallback to window.location if router fails (e.g., on some mobile browsers)
+          window.location.href = "/";
+        }
+      }
+    } catch (error) {
+      // Re-throw error so the login page can handle it
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -70,7 +89,14 @@ export default function AuthProvider({ children }: Props) {
   const logout = async () => {
     await api.logout();
     setUser(null);
-    router.push("/login");
+    if (isBrowser) {
+      try {
+        router.push("/login");
+      } catch (navError) {
+        // Fallback to window.location if router fails
+        window.location.href = "/login";
+      }
+    }
   };
 
   const refreshUser = async () => {

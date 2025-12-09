@@ -37,6 +37,9 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await login(values.email, values.password);
+    } catch (error) {
+      // Error is handled by the login function, just reset submitting state
+      console.error("Login error:", error);
     } finally {
       setIsSubmitting(false);
     }
