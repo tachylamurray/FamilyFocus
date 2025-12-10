@@ -41,6 +41,14 @@ export default function NotificationsPage() {
     }
   });
 
+  const updateNotification = useMutation({
+    mutationFn: ({ id, message }: { id: string; message: string }) =>
+      api.updateNotification(id, message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    }
+  });
+
   if (!user) {
     return null;
   }
@@ -62,6 +70,10 @@ export default function NotificationsPage() {
         <NotificationsPanel
           notifications={notificationsData?.notifications}
           isLoading={notificationsLoading}
+          onUpdate={async (id, message) => {
+            await updateNotification.mutateAsync({ id, message });
+          }}
+          isUpdating={updateNotification.isPending}
         />
       </div>
     </AppShell>

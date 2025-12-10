@@ -142,6 +142,16 @@ export const api = {
     return handleResponse<{ notification: Notification }>(res);
   },
 
+  async updateNotification(id: string, message: string) {
+    const res = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ message })
+    });
+    return handleResponse<{ notification: Notification }>(res);
+  },
+
   async listMembers() {
     const res = await fetch(`${API_BASE_URL}/members`, {
       credentials: "include"

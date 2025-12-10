@@ -96,5 +96,62 @@ router.post("/", requireAuth, async (req, res) => {
   });
 });
 
+const updateNotificationSchema = z.object({
+  message: z.string().min(4)
+});
+
+router.put("/:id", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const parsed = updateNotificationSchema.safeParse(req.body);
+  
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid notification data", errors: parsed.error.errors });
+  }
+
+  const existing = await prisma.notification.findUnique({
+    where: { id },
+    include: {
+      sender: true,
+      recipients: {
+        include: { user: true }
+      }
+    }
+  });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Notification not found" });
+  }
+
+  // Allow any authenticated user to edit
+  const updated = await prisma.notification.update({
+    where: { id },
+    data: {
+      message: parsed.data.message
+    },
+    include: {
+      sender: true,
+      recipients: {
+        include: { user: true }
+      }
+    }
+  });
+
+  return res.json({
+    notification: {
+      id: updated.id,
+      message: updated.message,
+      createdAt: updated.createdAt,
+      sender: {
+        id: updated.senderId,
+        name: updated.sender.name,
+        email: updated.sender.email,
+        relationship: updated.sender.relationship,
+        role: updated.sender.role
+      },
+      recipientIds: updated.recipients.map((recipient) => recipient.userId)
+    }
+  });
+});
+
 export default router;
 
