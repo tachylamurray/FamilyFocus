@@ -58,6 +58,17 @@ router.get("/", requireAuth, async (_req, res) => {
     (sum, income) => sum + Number(income.amount),
     0
   );
+  
+  // Calculate income by source
+  const incomeBySource = incomes.reduce(
+    (acc, income) => {
+      const source = income.source;
+      acc[source] = (acc[source] || 0) + Number(income.amount);
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+  
   const totalSpending = expenses.reduce(
     (sum, expense) => sum + Number(expense.amount),
     0
@@ -92,6 +103,7 @@ router.get("/", requireAuth, async (_req, res) => {
     overview: {
       month: now.toLocaleString("default", { month: "long", year: "numeric" }),
       monthlyIncome: totalIncome,
+      incomeBySource,
       totalSpending,
       netSavings: totalIncome - totalSpending,
       spendingByCategory,

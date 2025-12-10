@@ -42,6 +42,7 @@ export type Notification = {
 export type DashboardOverview = {
   month: string;
   monthlyIncome: number;
+  incomeBySource: Record<string, number>;
   totalSpending: number;
   netSavings: number;
   spendingByCategory: Record<ExpenseCategory, number>;

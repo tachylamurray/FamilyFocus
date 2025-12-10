@@ -5,6 +5,7 @@ import OverviewCards from "@/components/OverviewCards";
 import SpendingByCategory from "@/components/SpendingByCategory";
 import UpcomingBills from "@/components/UpcomingBills";
 import NotificationsPanel from "@/components/NotificationsPanel";
+import IncomeSources from "@/components/IncomeSources";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -46,7 +47,7 @@ export default function DashboardPage() {
           isLoading={overviewLoading}
         />
         <div className="grid gap-6 lg:grid-cols-3">
-          <SpendingByCategory
+          <IncomeSources
             overview={overviewData?.overview}
             isLoading={overviewLoading}
           />
@@ -57,10 +58,18 @@ export default function DashboardPage() {
             />
           </div>
         </div>
-        <NotificationsPanel
-          notifications={notificationsData?.notifications}
-          isLoading={notificationsLoading}
-        />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <SpendingByCategory
+            overview={overviewData?.overview}
+            isLoading={overviewLoading}
+          />
+          <div className="lg:col-span-2">
+            <NotificationsPanel
+              notifications={notificationsData?.notifications}
+              isLoading={notificationsLoading}
+            />
+          </div>
+        </div>
       </div>
     </AppShell>
   );
