@@ -17,8 +17,8 @@ export default function IncomeSources({ overview, isLoading }: Props) {
     return null;
   }
 
-  // Get income sources from overview, with defaults
-  const socialSecurity = overview.incomeBySource?.["Social Security"] ?? 1900;
+  // Get income sources from overview (backend provides defaults)
+  const socialSecurity = overview.incomeBySource?.["Social Security"] ?? 0;
   const retirement401k = overview.incomeBySource?.["401k/IRA"] ?? 0;
 
   const incomeSources = [

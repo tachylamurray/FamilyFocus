@@ -54,12 +54,7 @@ router.get("/", requireAuth, async (_req, res) => {
     })
   ]);
 
-  const totalIncome = incomes.reduce(
-    (sum, income) => sum + Number(income.amount),
-    0
-  );
-  
-  // Calculate income by source
+  // Calculate income by source from database
   const incomeBySource = incomes.reduce(
     (acc, income) => {
       const source = income.source;
@@ -67,6 +62,20 @@ router.get("/", requireAuth, async (_req, res) => {
       return acc;
     },
     {} as Record<string, number>
+  );
+
+  // Add default income sources if not present in database
+  if (!incomeBySource["Social Security"]) {
+    incomeBySource["Social Security"] = 1900;
+  }
+  if (!incomeBySource["401k/IRA"]) {
+    incomeBySource["401k/IRA"] = 0;
+  }
+
+  // Calculate total income including defaults
+  const totalIncome = Object.values(incomeBySource).reduce(
+    (sum, amount) => sum + amount,
+    0
   );
   
   const totalSpending = expenses.reduce(
