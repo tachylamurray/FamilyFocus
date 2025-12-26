@@ -19,6 +19,7 @@ export default function LoginPage() {
   const { login, loading, user } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -35,11 +36,13 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
       await login(values.email, values.password);
-    } catch (error) {
-      // Error is handled by the login function, just reset submitting state
-      console.error("Login error:", error);
+    } catch (error: any) {
+      // Extract error message
+      const message = error?.message || "Incorrect email or password. Please try again.";
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -52,6 +55,27 @@ export default function LoginPage() {
         <p className="mt-2 text-sm text-textSecondary">
           Sign in to access your shared finances.
         </p>
+
+        {/* Error Message Box */}
+        {errorMessage && (
+          <div className="mt-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-900/20 p-4">
+            <svg
+              className="h-5 w-5 flex-shrink-0 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="flex-1 text-sm text-red-200">{errorMessage}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
           <div>
             <label className="block text-sm font-medium text-textSecondary">
@@ -67,9 +91,17 @@ export default function LoginPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-textSecondary">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-textSecondary">
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
             <input
               type="password"
               className="mt-2 w-full rounded-xl border-2 border-emerald-600/50 bg-surfaceAlt/70 px-4 py-3 text-textPrimary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"

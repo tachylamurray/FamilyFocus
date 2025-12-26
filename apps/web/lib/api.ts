@@ -239,6 +239,36 @@ export const api = {
       credentials: "include"
     });
     return handleResponse<{ success: boolean }>(res);
+  },
+
+  async forgotPassword(email: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email })
+    });
+    return handleResponse<{ message: string }>(res);
+  },
+
+  async verifyResetCode(email: string, code: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/verify-reset-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, code })
+    });
+    return handleResponse<{ message: string; email: string }>(res);
+  },
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, code, newPassword })
+    });
+    return handleResponse<{ message: string }>(res);
   }
 };
 

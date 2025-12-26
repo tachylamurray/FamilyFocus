@@ -26,6 +26,7 @@ model User {
   notificationsSent Notification[] @relation("NotificationSender")
   notificationRecipients NotificationRecipient[]
   recurringBills RecurringBill[]
+  passwordResetTokens PasswordResetToken[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -107,5 +108,20 @@ model RecurringBill {
   updatedAt   DateTime @updatedAt
 
   @@index([nextDueDate])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   // 6-digit verification code
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([code])
+  @@index([email])
+  @@index([expiresAt])
 }
 

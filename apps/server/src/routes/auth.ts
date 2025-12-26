@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma";
 import { signToken } from "../utils/jwt";
 import { requireAuth } from "../middleware/auth";
+import { sendPasswordResetCode } from "../utils/email";
 
 const router = Router();
 
@@ -64,17 +65,17 @@ const loginSchema = z.object({
 router.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ message: "Invalid credentials" });
+    return res.status(400).json({ message: "Incorrect email or password. Please try again." });
   }
   const { email, password } = parsed.data;
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    return res.status(401).json({ message: "Invalid credentials" });
+    return res.status(401).json({ message: "Incorrect email or password. Please try again." });
   }
 
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) {
-    return res.status(401).json({ message: "Invalid credentials" });
+    return res.status(401).json({ message: "Incorrect email or password. Please try again." });
   }
 
   const token = signToken({ userId: user.id });
@@ -152,6 +153,169 @@ router.put("/profile", requireAuth, async (req, res) => {
   });
 
   return res.json({ user });
+});
+
+// Password Reset Endpoints
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email()
+});
+
+router.post("/forgot-password", async (req, res) => {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid email address" });
+  }
+
+  const { email } = parsed.data;
+
+  // Check if user exists
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    return res.status(404).json({
+      message: "The email you entered has never been associated with the application."
+    });
+  }
+
+  // Generate 6-digit code (000000-999999)
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Set expiration to 15 minutes from now
+  const expiresAt = new Date();
+  expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+  // Invalidate any existing unused codes for this user
+  await prisma.passwordResetToken.updateMany({
+    where: {
+      userId: user.id,
+      usedAt: null,
+      expiresAt: { gt: new Date() }
+    },
+    data: {
+      usedAt: new Date() // Mark as used
+    }
+  });
+
+  // Create new reset token
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      email: user.email,
+      code,
+      expiresAt
+    }
+  });
+
+  // Send email with code
+  await sendPasswordResetCode(email, code);
+
+  return res.json({
+    message: "A reset code has been sent to your email address."
+  });
+});
+
+const verifyResetCodeSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6, "Code must be 6 digits")
+});
+
+router.post("/verify-reset-code", async (req, res) => {
+  const parsed = verifyResetCodeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid request", errors: parsed.error.errors });
+  }
+
+  const { email, code } = parsed.data;
+
+  // Find valid reset token
+  const resetToken = await prisma.passwordResetToken.findFirst({
+    where: {
+      email,
+      code,
+      usedAt: null,
+      expiresAt: { gt: new Date() }
+    },
+    include: {
+      user: true
+    }
+  });
+
+  if (!resetToken) {
+    return res.status(400).json({ message: "Invalid or expired code" });
+  }
+
+  // Mark code as used
+  await prisma.passwordResetToken.update({
+    where: { id: resetToken.id },
+    data: { usedAt: new Date() }
+  });
+
+  // Return success (code is verified, user can proceed to reset password)
+  return res.json({
+    message: "Code verified successfully",
+    email: resetToken.email
+  });
+});
+
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6, "Code must be 6 digits"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/\d/, "Password must contain at least one number")
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character")
+});
+
+router.post("/reset-password", async (req, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid request", errors: parsed.error.errors });
+  }
+
+  const { email, code, newPassword } = parsed.data;
+
+  // Verify code is valid and not used
+  const resetToken = await prisma.passwordResetToken.findFirst({
+    where: {
+      email,
+      code,
+      usedAt: null,
+      expiresAt: { gt: new Date() }
+    },
+    include: {
+      user: true
+    }
+  });
+
+  if (!resetToken || !resetToken.user) {
+    return res.status(400).json({ message: "Invalid or expired code" });
+  }
+
+  // Hash new password
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  // Update user password
+  await prisma.user.update({
+    where: { id: resetToken.user.id },
+    data: { passwordHash }
+  });
+
+  // Invalidate all reset tokens for this user
+  await prisma.passwordResetToken.updateMany({
+    where: {
+      userId: resetToken.user.id,
+      usedAt: null
+    },
+    data: {
+      usedAt: new Date()
+    }
+  });
+
+  return res.json({
+    message: "Password reset successfully"
+  });
 });
 
 export default router;
