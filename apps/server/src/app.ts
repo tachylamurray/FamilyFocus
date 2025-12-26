@@ -10,6 +10,7 @@ import notificationRoutes from "./routes/notifications";
 import memberRoutes from "./routes/members";
 import dashboardRoutes from "./routes/dashboard";
 import incomeRoutes from "./routes/incomes";
+import recurringBillsRoutes from "./routes/recurringBills";
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/incomes", incomeRoutes);
+app.use("/api/recurring-bills", recurringBillsRoutes);
 
 app.use(
   (

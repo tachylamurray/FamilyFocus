@@ -25,6 +25,7 @@ model User {
   incomes     Income[]
   notificationsSent Notification[] @relation("NotificationSender")
   notificationRecipients NotificationRecipient[]
+  recurringBills RecurringBill[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -84,5 +85,27 @@ model ExpenseAuditLog {
 
   @@index([expenseId])
   @@index([createdAt])
+}
+
+enum RecurringFrequency {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  ONE_TIME
+}
+
+model RecurringBill {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Decimal  @db.Decimal(10, 2)
+  dayOfMonth  Int      // Day of month (1-31) for recurring bills
+  frequency   RecurringFrequency
+  nextDueDate DateTime
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([nextDueDate])
 }
 

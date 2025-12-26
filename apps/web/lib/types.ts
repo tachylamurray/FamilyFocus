@@ -49,3 +49,17 @@ export type DashboardOverview = {
   upcomingBills: Expense[];
 };
 
+export type RecurringFrequency = "MONTHLY" | "QUARTERLY" | "YEARLY" | "ONE_TIME";
+
+export type RecurringBill = {
+  id: string;
+  name: string;
+  amount: number;
+  dayOfMonth: number;
+  frequency: RecurringFrequency;
+  nextDueDate: string;
+  createdBy: User | null;
+  createdAt: string;
+  updatedAt: string;
+};
+

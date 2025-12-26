@@ -93,12 +93,12 @@ export default function ExpensesPage() {
             <div className="rounded-3xl border border-surfaceAlt bg-surfaceAlt/50 p-6 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold">
-                    {selectedExpense ? "Edit Expense" : "Add Expense"}
-                  </h2>
-                  <p className="mt-1 text-sm text-textSecondary">
-                    Track bills so everyone stays aligned.
-                  </p>
+              <h2 className="text-lg font-semibold">
+                {selectedExpense ? "Edit Expense" : "Add Expense"}
+              </h2>
+              <p className="mt-1 text-sm text-textSecondary">
+                Track bills so everyone stays aligned.
+              </p>
                 </div>
                 {selectedExpense && (
                   <button

@@ -34,7 +34,7 @@ router.get("/", requireAuth, async (_req, res) => {
   const start = startOfMonth(now);
   const end = endOfMonth(now);
 
-  const [incomes, expenses] = await Promise.all([
+  const [incomes, expenses, recurringBills] = await Promise.all([
     prisma.income.findMany({
       where: {
         receivedDate: {
@@ -51,7 +51,8 @@ router.get("/", requireAuth, async (_req, res) => {
         },
         deletedAt: null // Exclude deleted expenses
       }
-    })
+    }),
+    prisma.recurringBill.findMany()
   ]);
 
   // Calculate income by source from database
@@ -93,20 +94,121 @@ router.get("/", requireAuth, async (_req, res) => {
     {} as Record<string, number>
   );
 
-  const upcomingBills = await prisma.expense.findMany({
+  const upcomingWindowEnd = addDays(now, 30);
+
+  // Get regular expenses in upcoming window
+  const upcomingExpenses = await prisma.expense.findMany({
     where: {
       dueDate: {
         gte: now,
-        lte: addDays(now, 30)
+        lte: upcomingWindowEnd
       },
       deletedAt: null // Exclude deleted expenses
     },
     orderBy: { dueDate: "asc" },
     include: {
       createdBy: true
-    },
-    take: 10
+    }
   });
+
+  // Generate upcoming bills from recurring bills
+  const recurringUpcoming: Array<{
+    id: string;
+    category: string;
+    amount: number;
+    dueDate: Date;
+    notes: string | null;
+    createdBy: any;
+    createdAt: Date;
+    updatedAt: Date;
+  }> = [];
+
+  for (const bill of recurringBills) {
+    if (bill.frequency === "ONE_TIME") {
+      // For one-time, just check if nextDueDate is in window
+      if (bill.nextDueDate >= now && bill.nextDueDate <= upcomingWindowEnd) {
+        recurringUpcoming.push({
+          id: `recurring-${bill.id}`,
+          category: bill.name,
+          amount: Number(bill.amount),
+          dueDate: bill.nextDueDate,
+          notes: null,
+          createdBy: null,
+          createdAt: bill.createdAt,
+          updatedAt: bill.updatedAt
+        });
+      }
+    } else if (bill.frequency === "MONTHLY") {
+      // For monthly, compute next occurrence on the dayOfMonth
+      let nextDate = new Date(now);
+      nextDate.setDate(bill.dayOfMonth);
+      
+      // If the day has passed this month, move to next month
+      if (nextDate < now) {
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        nextDate.setDate(bill.dayOfMonth);
+      }
+      
+      // If within window, add it
+      if (nextDate <= upcomingWindowEnd) {
+        recurringUpcoming.push({
+          id: `recurring-${bill.id}-${nextDate.toISOString()}`,
+          category: bill.name,
+          amount: Number(bill.amount),
+          dueDate: nextDate,
+          notes: null,
+          createdBy: null,
+          createdAt: bill.createdAt,
+          updatedAt: bill.updatedAt
+        });
+      }
+    } else if (bill.frequency === "QUARTERLY") {
+      // For quarterly, compute next occurrence
+      let nextDate = new Date(bill.nextDueDate);
+      while (nextDate < now) {
+        nextDate.setMonth(nextDate.getMonth() + 3);
+        nextDate.setDate(bill.dayOfMonth);
+      }
+      
+      if (nextDate <= upcomingWindowEnd) {
+        recurringUpcoming.push({
+          id: `recurring-${bill.id}-${nextDate.toISOString()}`,
+          category: bill.name,
+          amount: Number(bill.amount),
+          dueDate: nextDate,
+          notes: null,
+          createdBy: null,
+          createdAt: bill.createdAt,
+          updatedAt: bill.updatedAt
+        });
+      }
+    } else if (bill.frequency === "YEARLY") {
+      // For yearly, compute next occurrence
+      let nextDate = new Date(bill.nextDueDate);
+      while (nextDate < now) {
+        nextDate.setFullYear(nextDate.getFullYear() + 1);
+        nextDate.setDate(bill.dayOfMonth);
+      }
+      
+      if (nextDate <= upcomingWindowEnd) {
+        recurringUpcoming.push({
+          id: `recurring-${bill.id}-${nextDate.toISOString()}`,
+          category: bill.name,
+          amount: Number(bill.amount),
+          dueDate: nextDate,
+          notes: null,
+          createdBy: null,
+          createdAt: bill.createdAt,
+          updatedAt: bill.updatedAt
+        });
+      }
+    }
+  }
+
+  // Combine regular expenses and recurring bills, sort by due date
+  const upcomingBills = [...upcomingExpenses, ...recurringUpcoming]
+    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+    .slice(0, 10);
 
   return res.json({
     overview: {
@@ -116,23 +218,23 @@ router.get("/", requireAuth, async (_req, res) => {
       totalSpending,
       netSavings: totalIncome - totalSpending,
       spendingByCategory,
-      upcomingBills: upcomingBills.map((expense) => ({
-        id: expense.id,
-        category: expense.category,
-        amount: Number(expense.amount),
-        dueDate: expense.dueDate,
-        notes: expense.notes,
-        createdBy: expense.createdBy
+      upcomingBills: upcomingBills.map((bill) => ({
+        id: bill.id,
+        category: bill.category,
+        amount: bill.amount,
+        dueDate: bill.dueDate.toISOString(),
+        notes: bill.notes,
+        createdBy: bill.createdBy
           ? {
-              id: expense.createdBy.id,
-              name: expense.createdBy.name,
-              email: expense.createdBy.email,
-              relationship: expense.createdBy.relationship,
-              role: expense.createdBy.role
+              id: bill.createdBy.id,
+              name: bill.createdBy.name,
+              email: bill.createdBy.email,
+              relationship: bill.createdBy.relationship,
+              role: bill.createdBy.role
             }
           : null,
-        createdAt: expense.createdAt,
-        updatedAt: expense.updatedAt
+        createdAt: bill.createdAt.toISOString(),
+        updatedAt: bill.updatedAt.toISOString()
       }))
     }
   });

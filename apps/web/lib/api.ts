@@ -1,4 +1,10 @@
-import { DashboardOverview, Expense, Notification, User } from "@/lib/types";
+import {
+  DashboardOverview,
+  Expense,
+  Notification,
+  RecurringBill,
+  User
+} from "@/lib/types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
@@ -181,6 +187,54 @@ export const api = {
 
   async deleteMember(memberId: string) {
     const res = await fetch(`${API_BASE_URL}/members/${memberId}`, {
+      method: "DELETE",
+      credentials: "include"
+    });
+    return handleResponse<{ success: boolean }>(res);
+  },
+
+  async listRecurringBills() {
+    const res = await fetch(`${API_BASE_URL}/recurring-bills`, {
+      credentials: "include"
+    });
+    return handleResponse<{ bills: RecurringBill[] }>(res);
+  },
+
+  async createRecurringBill(payload: {
+    name: string;
+    amount: number;
+    firstDueDate: string;
+    frequency: "MONTHLY" | "QUARTERLY" | "YEARLY" | "ONE_TIME";
+  }) {
+    const res = await fetch(`${API_BASE_URL}/recurring-bills`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+    return handleResponse<{ bill: RecurringBill }>(res);
+  },
+
+  async updateRecurringBill(
+    id: string,
+    payload: {
+      name: string;
+      amount: number;
+      firstDueDate: string;
+      frequency: "MONTHLY" | "QUARTERLY" | "YEARLY" | "ONE_TIME";
+    }
+  ) {
+    const res = await fetch(`${API_BASE_URL}/recurring-bills/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+    return handleResponse<{ bill: RecurringBill }>(res);
+  },
+
+  async deleteRecurringBill(id: string) {
+    const res = await fetch(`${API_BASE_URL}/recurring-bills/${id}`, {
       method: "DELETE",
       credentials: "include"
     });
