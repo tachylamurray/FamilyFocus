@@ -3,6 +3,9 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/server/prisma";
 
+// Mark route as dynamic (uses cookies)
+export const dynamic = 'force-dynamic';
+
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),

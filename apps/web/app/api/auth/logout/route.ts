@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+// Mark route as dynamic (uses cookies)
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   const isProduction = process.env.NODE_ENV === "production";
   

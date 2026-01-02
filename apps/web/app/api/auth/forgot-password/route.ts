@@ -3,6 +3,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/server/prisma";
 import { sendPasswordResetCode } from "@/lib/server/email";
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 const forgotPasswordSchema = z.object({
   email: z.string().email()
 });

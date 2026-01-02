@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/server/prisma";
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 const verifyResetCodeSchema = z.object({
   email: z.string().email(),
   code: z.string().length(6, "Code must be 6 digits")

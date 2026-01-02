@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/server/prisma";
 import { requireAuth } from "@/lib/server/middleware/auth";
 
+// Mark route as dynamic (uses cookies)
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const user = await requireAuth();

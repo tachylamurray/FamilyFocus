@@ -3,6 +3,9 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/server/prisma";
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 const resetPasswordSchema = z.object({
   email: z.string().email(),
   code: z.string().length(6, "Code must be 6 digits"),

@@ -4,6 +4,9 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/server/prisma";
 import { signToken } from "@/lib/server/jwt";
 
+// Mark route as dynamic (uses cookies)
+export const dynamic = 'force-dynamic';
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6)

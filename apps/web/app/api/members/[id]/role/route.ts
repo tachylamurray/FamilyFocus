@@ -3,6 +3,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/server/prisma";
 import { requireRole } from "@/lib/server/middleware/auth";
 
+// Mark route as dynamic (uses cookies)
+export const dynamic = 'force-dynamic';
+
 const updateRoleSchema = z.object({
   role: z.enum(["ADMIN", "MEMBER", "VIEW_ONLY"])
 });

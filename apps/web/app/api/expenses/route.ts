@@ -4,6 +4,9 @@ import { prisma } from "@/lib/server/prisma";
 import { requireAuth } from "@/lib/server/middleware/auth";
 import { uploadToCloudinary } from "@/lib/server/cloudinary";
 
+// Mark route as dynamic (uses cookies)
+export const dynamic = 'force-dynamic';
+
 const expenseFormSchema = z.object({
   category: z.string(),
   amount: z.string().transform((val) => {
