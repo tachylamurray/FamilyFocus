@@ -69,10 +69,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       message: "A reset code has been sent to your email address."
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Forgot password error:", error);
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    console.error("Error stack:", error?.stack);
+    console.error("Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    
+    // Check for specific error types
+    if (error?.message?.includes("DATABASE_URL")) {
+      return NextResponse.json(
+        { message: "Server configuration error: DATABASE_URL not set" },
+        { status: 500 }
+      );
+    }
+    if (error?.code === "P1001" || error?.message?.includes("Can't reach database")) {
+      return NextResponse.json(
+        { message: "Database connection error" },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { message: "Internal server error" },
+      { 
+        message: "Internal server error",
+        error: error?.message || "Unknown error"
+      },
       { status: 500 }
     );
   }
