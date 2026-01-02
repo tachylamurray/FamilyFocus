@@ -11,6 +11,22 @@ const loginSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Verify environment variables are set
+    if (!process.env.DATABASE_URL) {
+      console.error("DATABASE_URL is not set");
+      return NextResponse.json(
+        { message: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not set");
+      return NextResponse.json(
+        { message: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+
     const body = await req.json();
     const parsed = loginSchema.safeParse(body);
     
@@ -62,10 +78,19 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login error:", error);
+    // Log more details in production for debugging
+    const errorMessage = error?.message || "Unknown error";
+    const errorStack = process.env.NODE_ENV === "development" ? error?.stack : undefined;
+    console.error("Error details:", { errorMessage, errorStack, error });
+    
     return NextResponse.json(
-      { message: "Internal server error" },
+      { 
+        message: "Internal server error",
+        // Only include error details in development
+        ...(process.env.NODE_ENV === "development" && { error: errorMessage })
+      },
       { status: 500 }
     );
   }
