@@ -6,7 +6,20 @@ type Props = {
   onSelect: (expense: Expense) => void;
 };
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api").replace(/\/api$/, "");
+// Use relative path for API routes (Next.js API routes)
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api").replace(/\/api$/, "") || "";
+
+// Helper function to get image URL (handles both relative and absolute URLs)
+function getImageUrl(imageUrl: string | null | undefined): string | null {
+  if (!imageUrl) return null;
+  // If it's already an absolute URL (starts with http), return as-is
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
+  }
+  // Otherwise, treat as relative URL and prepend API_BASE_URL if it exists
+  // For Cloudinary URLs (absolute), this won't be needed, but handles legacy local URLs
+  return API_BASE_URL ? `${API_BASE_URL}${imageUrl}` : imageUrl;
+}
 
 export default function ExpensesTable({ expenses, onSelect }: Props) {
   if (!expenses?.length) {
@@ -57,12 +70,13 @@ export default function ExpensesTable({ expenses, onSelect }: Props) {
               <td className="px-6 py-4">
                 {expense.imageUrl ? (
                   <img
-                    src={`${API_BASE_URL}${expense.imageUrl}`}
+                    src={getImageUrl(expense.imageUrl) || undefined}
                     alt={`${expense.category} screenshot`}
                     className="h-12 w-12 rounded-lg object-cover border border-surfaceAlt cursor-pointer hover:opacity-80 transition"
                     onClick={(e) => {
                       e.stopPropagation();
-                      window.open(`${API_BASE_URL}${expense.imageUrl}`, "_blank");
+                      const url = getImageUrl(expense.imageUrl);
+                      if (url) window.open(url, "_blank");
                     }}
                   />
                 ) : (

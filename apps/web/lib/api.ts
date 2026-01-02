@@ -6,8 +6,10 @@ import {
   User
 } from "@/lib/types";
 
+// Use relative path for API routes in production (Next.js API routes)
+// Fallback to absolute URL for local development if needed
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {

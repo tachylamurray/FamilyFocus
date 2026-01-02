@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  VIEW_ONLY
+}
+
+model User {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  passwordHash String
+  relationship String
+  role        Role         @default(MEMBER)
+  canDelete   Boolean      @default(false)
+  expenses    Expense[]    @relation("UserExpenses")
+  incomes     Income[]
+  notificationsSent Notification[] @relation("NotificationSender")
+  notificationRecipients NotificationRecipient[]
+  recurringBills RecurringBill[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  amount      Decimal  @db.Decimal(10, 2)
+  dueDate     DateTime
+  notes       String?
+  imageUrl    String?
+  deletedAt   DateTime?
+  createdById String?
+  createdBy   User?    @relation("UserExpenses", fields: [createdById], references: [id])
+  auditLogs   ExpenseAuditLog[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  source      String
+  amount      Decimal  @db.Decimal(10, 2)
+  receivedDate DateTime
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String      @id @default(cuid())
+  message   String
+  senderId  String
+  sender    User        @relation("NotificationSender", fields: [senderId], references: [id])
+  recipients NotificationRecipient[]
+  createdAt DateTime    @default(now())
+}
+
+model NotificationRecipient {
+  id             String        @id @default(cuid())
+  notificationId String
+  notification   Notification  @relation(fields: [notificationId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+}
+
+model ExpenseAuditLog {
+  id          String   @id @default(cuid())
+  expenseId   String
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  action      String
+  changedBy   String
+  oldValues   Json?
+  newValues   Json?
+  createdAt   DateTime @default(now())
+
+  @@index([expenseId])
+  @@index([createdAt])
+}
+
+enum RecurringFrequency {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  ONE_TIME
+}
+
+model RecurringBill {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Decimal  @db.Decimal(10, 2)
+  dayOfMonth  Int      // Day of month (1-31) for recurring bills
+  frequency   RecurringFrequency
+  nextDueDate DateTime
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([nextDueDate])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   // 6-digit verification code
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([code])
+  @@index([email])
+  @@index([expiresAt])
+}
+

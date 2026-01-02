@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
-import { upload } from "../middleware/upload";
+import { upload, uploadFileToS3 } from "../middleware/upload-s3";
 
 const router = Router();
 
@@ -66,8 +66,16 @@ router.post("/", requireAuth, upload.single("image"), async (req, res) => {
     return res.status(400).json({ message: "Invalid expense data", errors: parsed.error.errors });
   }
 
-  // Handle image upload
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+  // Handle image upload to S3
+  let imageUrl: string | null = null;
+  if (req.file) {
+    try {
+      imageUrl = await uploadFileToS3(req);
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      return res.status(500).json({ message: "Failed to upload image" });
+    }
+  }
 
   const expense = await prisma.expense.create({
     data: {
@@ -130,9 +138,19 @@ router.put("/:id", requireAuth, upload.single("image"), async (req, res) => {
   if (req.body.dueDate !== undefined) updateData.dueDate = new Date(req.body.dueDate);
   if (req.body.notes !== undefined) updateData.notes = req.body.notes || null;
 
-  // Handle image upload - if new image is uploaded, use it, otherwise keep existing
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : existing.imageUrl;
-  if (imageUrl) {
+  // Handle image upload to S3 - if new image is uploaded, use it, otherwise keep existing
+  let imageUrl = existing.imageUrl;
+  if (req.file) {
+    try {
+      imageUrl = await uploadFileToS3(req);
+      if (imageUrl) {
+        updateData.imageUrl = imageUrl;
+      }
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      return res.status(500).json({ message: "Failed to upload image" });
+    }
+  } else if (imageUrl) {
     updateData.imageUrl = imageUrl;
   }
 

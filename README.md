@@ -30,7 +30,24 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/family_finance"
 PORT=4000
 JWT_SECRET="replace-with-secure-random-string"
 CLIENT_APP_URL="http://localhost:3000"
+
+# Email Configuration (for password reset) - SendGrid
+SENDGRID_API_KEY="SG.your-sendgrid-api-key-here"
+SENDGRID_FROM_EMAIL="noreply@yourdomain.com"
+
+# File Storage Configuration - AWS S3 (for permanent file storage)
+AWS_REGION="us-east-1"
+AWS_ACCESS_KEY_ID="your-aws-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-aws-secret-access-key"
+AWS_S3_BUCKET_NAME="your-bucket-name"
 ```
+
+> **Note:** 
+> - Create a free SendGrid account at https://sendgrid.com (100 emails/day free tier)
+> - Generate an API key in SendGrid dashboard (Settings → API Keys)
+> - Verify your sender email address in SendGrid (Settings → Sender Authentication)
+> - If email is not configured, reset codes will be logged to the console for development
+> - **File Storage**: See `AWS_S3_SETUP.md` for setting up permanent file storage with AWS S3 (recommended for production)
 
 ### `apps/web/.env.local`
 

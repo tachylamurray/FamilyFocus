@@ -23,7 +23,19 @@ type Props = {
   canEdit: boolean;
 };
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api").replace(/\/api$/, "");
+// Use relative path for API routes (Next.js API routes)
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api").replace(/\/api$/, "") || "";
+
+// Helper function to get image URL (handles both relative and absolute URLs)
+function getImageUrl(imageUrl: string | null | undefined): string | null {
+  if (!imageUrl) return null;
+  // If it's already an absolute URL (starts with http), return as-is
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
+  }
+  // Otherwise, treat as relative URL and prepend API_BASE_URL
+  return `${API_BASE_URL}${imageUrl}`;
+}
 
 const categories: ExpenseCategory[] = [
   "Mortgage",
@@ -67,7 +79,7 @@ export default function ExpenseForm({
         notes: initialValues.notes ?? ""
       });
       setSelectedImage(null);
-      setImagePreview(initialValues.imageUrl ? `${API_BASE_URL}${initialValues.imageUrl}` : null);
+      setImagePreview(getImageUrl(initialValues.imageUrl));
     } else {
       form.reset({
         category: categories[0],
