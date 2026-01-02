@@ -82,17 +82,38 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
+    // Always log full error details for debugging in production
     console.error("Login error:", error);
-    // Log more details in production for debugging
-    const errorMessage = error?.message || "Unknown error";
-    const errorStack = process.env.NODE_ENV === "development" ? error?.stack : undefined;
-    console.error("Error details:", { errorMessage, errorStack, error });
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    console.error("Error stack:", error?.stack);
+    console.error("Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    
+    // Check for specific error types
+    if (error?.message?.includes("JWT_SECRET")) {
+      return NextResponse.json(
+        { message: "Server configuration error: JWT_SECRET not set" },
+        { status: 500 }
+      );
+    }
+    if (error?.message?.includes("DATABASE_URL")) {
+      return NextResponse.json(
+        { message: "Server configuration error: DATABASE_URL not set" },
+        { status: 500 }
+      );
+    }
+    if (error?.code === "P1001" || error?.message?.includes("Can't reach database")) {
+      return NextResponse.json(
+        { message: "Database connection error" },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json(
       { 
         message: "Internal server error",
-        // Only include error details in development
-        ...(process.env.NODE_ENV === "development" && { error: errorMessage })
+        // Include error message in production for debugging
+        error: error?.message || "Unknown error"
       },
       { status: 500 }
     );
