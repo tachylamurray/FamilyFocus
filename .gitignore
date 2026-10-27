@@ -13,4 +13,5 @@ yarn.lock
 .DS_Store
 /apps/server/prisma/dev.db
 /apps/server/prisma/.env
+failurescreenshots
 
